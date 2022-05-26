@@ -1,8 +1,4 @@
-# Observations on the development
 
-* The data is generated completely random in every execution
-* The vehicle code is the vehicle model
-* I'm assuming stations == cities
 
 Question 1
 ----------
