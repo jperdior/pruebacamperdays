@@ -4,13 +4,14 @@ namespace App\Validator;
 
 use PHPUnit\Framework\TestCase;
 use App\Provider\RentalCampersProvider;
+use App\Param\UserSearchParams;
 use App\Model\Vehicle;
 
 class RentalCampersProviderTest extends TestCase
 {
     public function testValidVehicles(): void
     {
-        $rentalCampersProvider = new RentalCampersProvider('LON', new \DateTime('2019-01-01'), new \DateTime('2019-01-02'));
+        $rentalCampersProvider = new RentalCampersProvider(new UserSearchParams('LON','2019-01-01', '2019-01-02'));
         $vehicles = $rentalCampersProvider->search();
         foreach($vehicles as $vehicle) {
             $this->assertEquals($vehicle::class,Vehicle::class);

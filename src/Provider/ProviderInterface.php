@@ -3,6 +3,7 @@
 namespace App\Provider;
 
 use Symfony\Component\HttpFoundation\Response;
+use App\Param\UserParamsInterface;
 
 interface ProviderInterface
 {
@@ -11,10 +12,9 @@ interface ProviderInterface
     const ON_REQUEST_NORMALIZATION = 'on_request';
     const NOT_AVAILABLE_NORMALIZATION = 'not_available';
 
-    public function __construct(string $station, \DateTime $startDate, \DateTime $endDate);
+    public function __construct(UserParamsInterface $userParams);
     public function search(): array;
-    public function getData();
-    public function normalizeVehicles($data): array;
+    public function normalizeVehicles(array $data): array;
 
 
 }

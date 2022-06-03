@@ -7,7 +7,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Validator\SearchValidator;
+use App\Error\ErrorInterface;
 use App\Service\Inventory;
+use App\Param\UserSearchParams;
 
 class IndexController extends AbstractController
 {
@@ -17,11 +19,11 @@ class IndexController extends AbstractController
         $startDate = $request->query->get('pickUpDate');
         $endDate = $request->query->get('dropOffDate');
         $cityCode = $request->query->get('cityCode');
-        if(!SearchValidator::searchParamsAreValid($startDate, $endDate, $cityCode)){
-            return new JsonResponse(['error' => 'Invalid search parameters'], 400);
+        $userSearchParams = new UserSearchParams($cityCode, $startDate, $endDate);
+        $paramValidationResult = SearchValidator::validate($userSearchParams);
+        if($paramValidationResult instanceof ErrorInterface){
+            return new JsonResponse(['message' => $paramValidationResult->getMessage()], $paramValidationResult->getCode());
         }
-        $startDate = \DateTime::createFromFormat('Y-m-d', $startDate);
-        $endDate = \DateTime::createFromFormat('Y-m-d', $endDate);
         $vehicles = Inventory::search($cityCode, $startDate, $endDate);
         return new JsonResponse($vehicles);
     }

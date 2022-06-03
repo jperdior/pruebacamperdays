@@ -3,51 +3,47 @@
 namespace App\Provider;
 
 use App\Provider\ProviderInterface;
-use App\ProviderMockups\CampervansForAllData;
 use App\Model\Vehicle;
+use App\Param\UserParamsInterface;
+use App\Param\UserSearchParams;
 use App\Service\CurrencyConverter;
+use App\Provider\Adapter\JsonResponseDataAdapter;
 
 class CampervansForAllProvider implements ProviderInterface{
 
     const PROVIDER_CODE = 'campervans_4all';
     const PROVIDER_CURRENCY = 'USD';
 
-    private $cityCode;
-    private $startDate;
-    private $endDate;
+    /** @var UserSearchParams */
+    private $userParams;
 
-    public function __construct(string $cityCode, \DateTime $startDate, \DateTime $endDate)
+    public function __construct(UserParamsInterface $userParams)
     {
-        $this->cityCode = $cityCode;
-        $this->startDate = $startDate;
-        $this->endDate = $endDate;
+        $this->userParams = $userParams;
     }
 
+
     public function search(): array{
-        $data = $this->getData();
+        $data = JsonResponseDataAdapter::getData($this->userParams);
         $vehicles = $this->normalizeVehicles($data);
         return $vehicles;
     }
 
-    public function getData(){
-        return CampervansForAllData::generateData();
-    }
-
-    public function normalizeVehicles($data): array{
-        $data = json_decode($data->getContent(), true);
-
+    public function normalizeVehicles(array $data): array{
         $vehicles = [];
-        foreach($data as $vehicle){
-            $price = CurrencyConverter::convertUsdToEur($vehicle['total_price']);
-            $availability = $this->normalizeAvailability($vehicle['availability']);
+        foreach($data as $element){
+            /** @var VehicleNormalizer */
+            $element = $element;
+            $availability = $this->normalizeAvailability($element->getAvailability());
+            $price = $element->getPrice();
             $vehicle = new Vehicle(
-                $vehicle['vehicle_code'],
-                $vehicle['vehicle_code'],
+                $element->getCode(),
+                $element->getCode(),
                 $price,
                 'EUR',
                 $availability,
                 self::PROVIDER_CODE,
-                $this->cityCode
+                $this->userParams->getCity()
             );
             $vehicles[] = $vehicle;
         }

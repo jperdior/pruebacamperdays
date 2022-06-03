@@ -2,29 +2,43 @@
 
 namespace App\Validator;
 
+use App\Validator\ValidatorInterface;
 use App\DataFixtures\CityFixtures;
+use App\Error\ErrorInterface;
+use App\Error\Search\DateEmptyError;
+use App\Error\Search\DateInvalidFormatError;
+use App\Error\Search\DateRangeError;
+use App\Error\Search\CityError;
+use App\Param\UserParamsInterface;
+use App\Param\UserSearchParams;
 
-class SearchValidator{
 
-    public static function searchParamsAreValid(?string $startDate, ?string $endDate, ?string $cityCode): bool
+class SearchValidator implements ValidatorInterface{
+
+    public static function validate(UserParamsInterface $searchParams): ?ErrorInterface
     {
+        /** @var UserSearchParams */
+        $searchParams = $searchParams;
+        $startDate = $searchParams->getStartDate();
+        $endDate = $searchParams->getEndDate();
+        $cityCode = $searchParams->getCity();
+
         if (empty($startDate) || empty($endDate)) {
-            return false;
+            return new DateEmptyError();
         }
 
         if (!self::validateDateFormat($startDate) || !self::validateDateFormat($endDate)) {
-            return false;
+            return new DateInvalidFormatError();
         }
 
         if (!self::validateDateRange($startDate, $endDate)) {
-            return false;
+            return new DateRangeError();
         }
 
         if (!self::validateCityCode($cityCode)) {
-            return false;
+            return new CityError();
         }
-
-        return true;
+        return null;
     }
 
     private static function validateCityCode(string $cityCode): bool

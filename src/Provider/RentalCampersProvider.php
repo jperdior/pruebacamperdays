@@ -3,47 +3,44 @@
 namespace App\Provider;
 
 use App\Model\Vehicle;
+use App\Param\UserParamsInterface;
+use App\Param\UserSearchParams;
 use App\Provider\ProviderInterface;
-use App\ProviderMockups\RentalCampersData;
-use Symfony\Component\HttpFoundation\Response;
+use App\Provider\Adapter\MysqlDataAdapter;
+use App\Provider\Normalizer\VehicleNormalizer;
 
 class RentalCampersProvider implements ProviderInterface{
 
     const PROVIDER_CODE = 'rental_campers';
 
-    private $cityCode;
-    private $startDate;
-    private $endDate;
+    /** @var UserSearchParams */
+    private $userParams;
 
-    public function __construct(string $cityCode, \DateTime $startDate, \DateTime $endDate)
+    public function __construct(UserParamsInterface $userParams)
     {
-        $this->cityCode = $cityCode;
-        $this->startDate = $startDate;
-        $this->endDate = $endDate;
+        $this->userParams = $userParams;
     }
 
     public function search(): array{
-        $data = $this->getData();
+        $data = MysqlDataAdapter::getData($this->userParams);
         $vehicles = $this->normalizeVehicles($data);
         return $vehicles;
     }
 
-    public function getData(){
-        return RentalCampersData::generateData();
-    }
 
     public function normalizeVehicles($data): array{
         $vehicles = [];
+        /** @var VehicleNormalizer */
         foreach($data as $vehicle){
-            $availability = $this->normalizeAvailability($vehicle['availability']);
+            $availability = $this->normalizeAvailability($vehicle->getAvailability());
             $vehicle = new Vehicle(
-                $vehicle['code'],
-                $vehicle['code'],
-                $vehicle['price'],
-                $vehicle['currency'],
+                $vehicle->getCode(),
+                $vehicle->getCode(),
+                $vehicle->getPrice(),
+                'EUR',
                 $availability,
                 self::PROVIDER_CODE,
-                $this->cityCode
+                $this->userParams->getCity()
             );
             $vehicles[] = $vehicle;
         }

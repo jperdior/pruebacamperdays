@@ -4,49 +4,49 @@ namespace App\Provider;
 
 use App\Model\Vehicle;
 use App\Provider\ProviderInterface;
-use App\ProviderMockups\RoadTravellersData;
-use Symfony\Component\HttpFoundation\Response;
+use App\Provider\Adapter\XmlResponseDataAdapter;
 use App\Service\CurrencyConverter;
+use App\Param\UserParamsInterface;
+use App\Param\UserSearchParams;
+use App\Provider\Normalizer\VehicleNormalizer;
 
 class RoadTravellersProvider implements ProviderInterface{
 
     const PROVIDER_CODE = 'road_travellers';
+    const AVAILABLE = 'Yes';
+    const NOT_AVAILABLE = 'Not';
 
-    private $cityCode;
-    private $startDate;
-    private $endDate;
+    /** @var UserSearchParams */
+    private $userParams;
 
-    public function __construct(string $cityCode, \DateTime $startDate, \DateTime $endDate)
+    public function __construct(UserParamsInterface $userParams)
     {
-        $this->cityCode = $cityCode;
-        $this->startDate = $startDate;
-        $this->endDate = $endDate;
+        $this->userParams = $userParams;
     }
 
+
     public function search(): array{
-        $response = $this->getData();
-        $vehicles = $this->normalizeVehicles($response);
+        $data = XmlResponseDataAdapter::getData($this->userParams);
+        $vehicles = $this->normalizeVehicles($data);
         return $vehicles;
     }
 
-    public function getData(): Response{
-        return RoadTravellersData::generatXmlResponse();
-    }
 
-    public function normalizeVehicles($data): array{
-        $vehiclesXml = simplexml_load_string($data->getContent());
+    public function normalizeVehicles(array $data): array{
         $vehicles = [];
-        foreach($vehiclesXml as $vehicleXml){
-            $availability = $this->normalizeAvailability((string)$vehicleXml->Available);
-            $price = $this->normalizePrice((string)$vehicleXml->TotalPrice,(string)$vehicleXml->TotalPrice->attributes()->currency);
+        foreach($data as $element){
+            /** @var VehicleNormalizer */
+            $element = $element;
+            $availability = $this->normalizeAvailability($element->getAvailability());
+            $price = $this->normalizePrice($element->getPrice(), $element->getCurrency());
             $vehicle = new Vehicle(
-                (string)$vehicleXml->Code,
-                (string)$vehicleXml->Code,
+                $element->getCode(),
+                $element->getCode(),
                 $price,
                 'EUR',
                 $availability,
                 self::PROVIDER_CODE,
-                $this->cityCode
+                $this->userParams->getCity()
             );
             $vehicles[] = $vehicle;
         }
@@ -54,10 +54,10 @@ class RoadTravellersProvider implements ProviderInterface{
     }
 
     private function normalizeAvailability(string $availability): string{
-        if($availability == 'Yes'){
+        if($availability === self::AVAILABLE){
             return self::AVAILABLE_NORMALIZATION;
         }
-        if($availability == 'Not'){
+        if($availability === self::NOT_AVAILABLE){
             return self::NOT_AVAILABLE_NORMALIZATION;
         }
     }

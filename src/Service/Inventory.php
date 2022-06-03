@@ -6,27 +6,21 @@ namespace App\Service;
 use App\Provider\RentalCampersProvider;
 use App\Provider\RoadTravellersProvider;
 use App\Provider\CampervansForAllProvider;
+use App\Param\UserSearchParams;
+use App\Provider\ProviderFactory;
 
 class Inventory{
 
-    public static function search(string $cityCode, \DateTime $pickUpDate, \DateTime $dropOffDate):array{
+    public static function search(string $cityCode, string $pickUpDate, string $dropOffDate):array{
+        $userSearchParams = new UserSearchParams($cityCode, $pickUpDate, $dropOffDate);
+        $providers = ProviderFactory::create($userSearchParams);
         $finalVehicles = [];
-        $rentalCampersProvider = new RentalCampersProvider($cityCode, $pickUpDate, $dropOffDate);
-        $rentalCampersVehicles = $rentalCampersProvider->search();
-        if(!empty($rentalCampersVehicles)){
-            $finalVehicles = array_merge($finalVehicles, $rentalCampersVehicles);
+        foreach($providers as $provider){
+            $vehicles = $provider->search();
+            if(!empty($vehicles)){
+                $finalVehicles = array_merge($finalVehicles, $vehicles);
+            }
         }
-        $roadTravellersProvider = new RoadTravellersProvider($cityCode, $pickUpDate, $dropOffDate);
-        $roadTravellersVehicles = $roadTravellersProvider->search();
-        if(!empty($roadTravellersVehicles)){
-            $finalVehicles = array_merge($finalVehicles, $roadTravellersVehicles);
-        }
-        $campervansForAllProvider = new CampervansForAllProvider($cityCode, $pickUpDate, $dropOffDate);
-        $campervansForAllVehicles = $campervansForAllProvider->search();
-        if(!empty($campervansForAllVehicles)){
-            $finalVehicles = array_merge($finalVehicles, $campervansForAllVehicles);
-        }
-
         return $finalVehicles;
     }
 
